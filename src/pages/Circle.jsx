@@ -26,6 +26,7 @@ const Circle = () => {
         const { data } = await insforge.database
           .from('messages')
           .select('*')
+          .eq('vibe', vibe) // Filter by vibe
           .order('created_at', { ascending: true });
         
         if (data) setMessages(data);
@@ -36,15 +37,17 @@ const Circle = () => {
 
     fetchMessages();
 
-    // Subscribe to new messages (with safety checks)
+    // Subscribe to new messages (with safety checks and vibe filter)
     let subscription;
     try {
       const channel = insforge.database.from('messages');
       if (channel && typeof channel.on === 'function') {
         subscription = channel
           .on('INSERT', (payload) => {
+            // Only add if it matches our vibe
+            if (payload.new.vibe !== vibe) return;
+            
             setMessages((prev) => {
-              // Avoid duplicates from optimistic updates
               const isDuplicate = prev.some(m => m.text === payload.new.text && m.user_id === payload.new.user_id);
               if (isDuplicate) return prev;
               return [...prev, payload.new];
@@ -85,6 +88,7 @@ const Circle = () => {
       user_id: user?.id,
       user_display_name: profile?.username || 'Guest',
       text: textToSend,
+      vibe: vibe, // Include vibe
       created_at: new Date().toISOString()
     };
     
@@ -95,6 +99,7 @@ const Circle = () => {
         user_id: user?.id,
         user_display_name: profile?.username || 'Guest',
         text: textToSend,
+        vibe: vibe, // Include vibe
         created_at: new Date().toISOString()
       }]);
     } catch (err) {
