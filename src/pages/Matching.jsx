@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
+import { insforge } from '../lib/insforge';
+
 const Matching = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -9,18 +11,61 @@ const Matching = () => {
   const [peopleFound, setPeopleFound] = useState(0);
 
   useEffect(() => {
-    // Simulate matching process
-    const timers = [
-      setTimeout(() => setPeopleFound(1), 800),
-      setTimeout(() => setPeopleFound(2), 1500),
-      setTimeout(() => setPeopleFound(3), 2400),
-      setTimeout(() => setPeopleFound(4), 3500),
-      setTimeout(() => setPeopleFound(5), 4800),
-      setTimeout(() => navigate('/circle', { state: { vibe } }), 6000)
-    ];
+    const findOrCreateCircle = async () => {
+      try {
+        // Update simulated count for visual feedback
+        const countInterval = setInterval(() => {
+          setPeopleFound(prev => Math.min(prev + 1, 5));
+        }, 800);
 
-    return () => timers.forEach(t => clearTimeout(t));
-  }, [navigate, vibe]);
+        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+        
+        // 1. Find an active circle for this vibe with room
+        const { data: existingCircles } = await insforge.database
+          .from('circles')
+          .select('*')
+          .eq('vibe', vibe)
+          .gt('created_at', tenMinutesAgo)
+          .lt('user_count', 5)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        let circleToJoin;
+
+        if (existingCircles && existingCircles.length > 0) {
+          circleToJoin = existingCircles[0];
+          // Update user count
+          await insforge.database
+            .from('circles')
+            .update({ user_count: circleToJoin.user_count + 1 })
+            .eq('id', circleToJoin.id);
+        } else {
+          // 2. Create new circle
+          const { data: newCircles } = await insforge.database
+            .from('circles')
+            .insert([{ vibe, user_count: 1 }])
+            .select();
+          
+          if (newCircles) circleToJoin = newCircles[0];
+        }
+
+        clearInterval(countInterval);
+        setPeopleFound(5);
+
+        // Navigate to circle with the circle object
+        if (circleToJoin) {
+          setTimeout(() => {
+            navigate('/circle', { state: { vibe, circle: circleToJoin } });
+          }, 1500); 
+        }
+      } catch (err) {
+        console.error('Matching failed:', err);
+        setTimeout(() => navigate('/home'), 5000);
+      }
+    };
+
+    findOrCreateCircle();
+  }, [vibe, navigate]);
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-6 text-center">

@@ -11,6 +11,7 @@ const Circle = () => {
   const navigate = useNavigate();
   const { profile, user } = useAuth();
   const vibe = location.state?.vibe || 'casual';
+  const circle = location.state?.circle;
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -19,14 +20,30 @@ const Circle = () => {
 
   const vibeName = vibe === 'vent' ? 'Vent Circle' : vibe === 'advice' ? 'Advice Circle' : vibe === 'chill' ? 'Chill Circle' : 'Casual Circle';
 
+  // Calculate remaining seconds based on circle creation time
+  const getRemainingSeconds = () => {
+    if (!circle) return 600;
+    const startTime = new Date(circle.created_at).getTime();
+    const now = new Date().getTime();
+    const elapsed = Math.floor((now - startTime) / 1000);
+    return Math.max(0, 600 - elapsed);
+  };
+
+  const remainingSeconds = getRemainingSeconds();
+
   useEffect(() => {
-    // Fetch initial messages from the database
+    if (!circle) {
+      navigate('/home');
+      return;
+    }
+
+    // Fetch initial messages for THIS circle
     const fetchMessages = async () => {
       try {
         const { data } = await insforge.database
           .from('messages')
           .select('*')
-          .eq('vibe', vibe) // Filter by vibe
+          .eq('circle_id', circle.id)
           .order('created_at', { ascending: true });
         
         if (data) setMessages(data);
@@ -37,22 +54,21 @@ const Circle = () => {
 
     fetchMessages();
 
-    // Subscribe to new messages (with modern channel syntax)
+    // Subscribe to new messages for THIS circle
     let subscription;
     try {
       subscription = insforge
-        .channel(`circle-${vibe}`)
+        .channel(`circle-${circle.id}`)
         .on(
           'postgres_changes',
           {
             event: 'INSERT',
             schema: 'public',
             table: 'messages',
-            filter: `vibe=eq.${vibe}`,
+            filter: `circle_id=eq.${circle.id}`,
           },
           (payload) => {
             setMessages((prev) => {
-              // Avoid duplicates from optimistic updates
               const isDuplicate = prev.some(m => m.id === payload.new.id || (m.text === payload.new.text && m.user_id === payload.new.user_id));
               if (isDuplicate) return prev;
               return [...prev, payload.new];
@@ -64,15 +80,12 @@ const Circle = () => {
       console.warn('Real-time subscription failed:', err);
     }
 
-    const warningTimer = setTimeout(() => setShowWarning(true), 30000);
-
     return () => {
       if (subscription && typeof subscription.unsubscribe === 'function') {
         subscription.unsubscribe();
       }
-      clearTimeout(warningTimer);
     };
-  }, []);
+  }, [circle, navigate]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -82,7 +95,7 @@ const Circle = () => {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || !circle) return;
 
     const textToSend = inputText;
     setInputText('');
@@ -93,7 +106,8 @@ const Circle = () => {
       user_id: user?.id,
       user_display_name: profile?.username || 'Guest',
       text: textToSend,
-      vibe: vibe, // Include vibe
+      circle_id: circle.id,
+      vibe: vibe,
       created_at: new Date().toISOString()
     };
     
@@ -104,7 +118,8 @@ const Circle = () => {
         user_id: user?.id,
         user_display_name: profile?.username || 'Guest',
         text: textToSend,
-        vibe: vibe, // Include vibe
+        circle_id: circle.id,
+        vibe: vibe,
         created_at: new Date().toISOString()
       }]);
     } catch (err) {
@@ -124,10 +139,10 @@ const Circle = () => {
           </button>
           <div>
             <h3 className="font-bold text-base text-[#F8FAFC]">{vibeName}</h3>
-            <p className="text-[10px] text-[#94A3B8] uppercase tracking-widest font-bold">6 People Active</p>
+            <p className="text-[10px] text-[#94A3B8] uppercase tracking-widest font-bold">{circle?.user_count || 1} People Active</p>
           </div>
         </div>
-        <CircleTimer durationSeconds={600} onEnd={() => navigate('/feedback')} />
+        <CircleTimer durationSeconds={remainingSeconds} onEnd={() => navigate('/feedback')} />
       </div>
 
       {/* Messages Area */}
