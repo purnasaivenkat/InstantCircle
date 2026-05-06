@@ -43,7 +43,12 @@ const Circle = () => {
       if (channel && typeof channel.on === 'function') {
         subscription = channel
           .on('INSERT', (payload) => {
-            setMessages((prev) => [...prev, payload.new]);
+            setMessages((prev) => {
+              // Avoid duplicates from optimistic updates
+              const isDuplicate = prev.some(m => m.text === payload.new.text && m.user_id === payload.new.user_id);
+              if (isDuplicate) return prev;
+              return [...prev, payload.new];
+            });
           })
           .subscribe();
       }
@@ -73,6 +78,17 @@ const Circle = () => {
 
     const textToSend = inputText;
     setInputText('');
+
+    // Optimistic update: Add message to local state immediately
+    const optimisticMsg = {
+      id: Date.now(),
+      user_id: user?.id,
+      user_display_name: profile?.username || 'Guest',
+      text: textToSend,
+      created_at: new Date().toISOString()
+    };
+    
+    setMessages((prev) => [...prev, optimisticMsg]);
 
     try {
       await insforge.database.from('messages').insert([{
