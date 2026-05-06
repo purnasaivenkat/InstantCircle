@@ -31,26 +31,25 @@ const Circle = () => {
 
   const remainingSeconds = getRemainingSeconds();
 
+  const fetchMessages = async () => {
+    try {
+      const { data } = await insforge.database
+        .from('messages')
+        .select('*')
+        .eq('circle_id', circle.id)
+        .order('created_at', { ascending: true });
+      
+      if (data) setMessages(data);
+    } catch (err) {
+      console.error('Error fetching messages:', err);
+    }
+  };
+
   useEffect(() => {
     if (!circle) {
       navigate('/home');
       return;
     }
-
-    // Fetch initial messages for THIS circle
-    const fetchMessages = async () => {
-      try {
-        const { data } = await insforge.database
-          .from('messages')
-          .select('*')
-          .eq('circle_id', circle.id)
-          .order('created_at', { ascending: true });
-        
-        if (data) setMessages(data);
-      } catch (err) {
-        console.error('Error fetching messages:', err);
-      }
-    };
 
     fetchMessages();
 
@@ -140,7 +139,14 @@ const Circle = () => {
             </svg>
           </button>
           <div>
-            <h3 className="font-bold text-base text-[#F8FAFC]">{vibeName}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-base text-[#F8FAFC]">{vibeName}</h3>
+              <button onClick={fetchMessages} className="text-[#6366F1] p-1 hover:bg-[#6366F1]/10 rounded-lg transition-colors">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+                </svg>
+              </button>
+            </div>
             <p className="text-[10px] text-[#94A3B8] uppercase tracking-widest font-bold">{circle?.user_count || 1} People Active</p>
           </div>
         </div>

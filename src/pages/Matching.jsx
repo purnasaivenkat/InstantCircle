@@ -13,6 +13,9 @@ const Matching = () => {
   useEffect(() => {
     const findOrCreateCircle = async () => {
       try {
+        // Random delay to prevent race conditions (0.5s to 2s)
+        await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1500));
+
         // Update simulated count for visual feedback
         const countInterval = setInterval(() => {
           setPeopleFound(prev => Math.min(prev + 1, 5));
