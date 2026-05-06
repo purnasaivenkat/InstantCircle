@@ -37,26 +37,31 @@ const Circle = () => {
 
     fetchMessages();
 
-    // Subscribe to new messages (with safety checks and vibe filter)
+    // Subscribe to new messages (with modern channel syntax)
     let subscription;
     try {
-      const channel = insforge.database.from('messages');
-      if (channel && typeof channel.on === 'function') {
-        subscription = channel
-          .on('INSERT', (payload) => {
-            // Only add if it matches our vibe
-            if (payload.new.vibe !== vibe) return;
-            
+      subscription = insforge
+        .channel(`circle-${vibe}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `vibe=eq.${vibe}`,
+          },
+          (payload) => {
             setMessages((prev) => {
-              const isDuplicate = prev.some(m => m.text === payload.new.text && m.user_id === payload.new.user_id);
+              // Avoid duplicates from optimistic updates
+              const isDuplicate = prev.some(m => m.id === payload.new.id || (m.text === payload.new.text && m.user_id === payload.new.user_id));
               if (isDuplicate) return prev;
               return [...prev, payload.new];
             });
-          })
-          .subscribe();
-      }
+          }
+        )
+        .subscribe();
     } catch (err) {
-      console.warn('Real-time subscription failed, falling back to polling or manual refresh.', err);
+      console.warn('Real-time subscription failed:', err);
     }
 
     const warningTimer = setTimeout(() => setShowWarning(true), 30000);
