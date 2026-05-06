@@ -54,7 +54,7 @@ const Circle = () => {
 
     fetchMessages();
 
-    // Subscribe to new messages for THIS circle
+    // Subscribe to new messages for THIS circle (Simplified)
     let subscription;
     try {
       subscription = insforge
@@ -65,9 +65,11 @@ const Circle = () => {
             event: 'INSERT',
             schema: 'public',
             table: 'messages',
-            filter: `circle_id=eq.${circle.id}`,
           },
           (payload) => {
+            // Manual filter for safety
+            if (payload.new.circle_id !== circle.id) return;
+            
             setMessages((prev) => {
               const isDuplicate = prev.some(m => m.id === payload.new.id || (m.text === payload.new.text && m.user_id === payload.new.user_id));
               if (isDuplicate) return prev;
