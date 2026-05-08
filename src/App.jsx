@@ -11,15 +11,21 @@ import Home from './pages/Home';
 import Matching from './pages/Matching';
 import Circle from './pages/Circle';
 import Feedback from './pages/Feedback';
+import PrivateChat from './pages/PrivateChat';
+import Companion from './pages/Companion';
+
 
 import Verify from './pages/Verify';
 
 function App() {
   return (
     <AuthProvider>
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#0B1120]">
-        <div className="w-full max-w-[450px] h-full min-h-screen md:min-h-[850px] md:h-[850px] bg-[#0F172A] relative overflow-hidden border-x border-[#1E293B] shadow-2xl">
+      <div className="h-screen w-full bg-[#020617] text-[#F8FAFC]">
+        <div className="w-full h-full relative flex flex-col overflow-hidden">
+
+
           <Router>
+
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Welcome />} />
@@ -60,6 +66,24 @@ function App() {
                   </ProtectedRoute>
                 } 
               />
+              <Route 
+                path="/private-chat/:chatId" 
+                element={
+                  <ProtectedRoute>
+                    <PrivateChat />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/companion" 
+                element={
+                  <ProtectedRoute>
+                    <Companion />
+                  </ProtectedRoute>
+                } 
+              />
+
+
 
               {/* Catch-all */}
               <Route path="*" element={<Navigate to="/" replace />} />

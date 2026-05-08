@@ -6,14 +6,16 @@ import VibeCard from '../components/VibeCard';
 
 const Home = () => {
   const [selectedVibe, setSelectedVibe] = useState(null);
-  const { profile, logout } = useAuth();
+  const { profile, user, logout, fetchProfile, debugMsg } = useAuth();
+
+
   const navigate = useNavigate();
 
   const vibes = [
-    { id: 'vent', emoji: '😤', label: 'Just need to vent' },
-    { id: 'casual', emoji: '💬', label: 'Casual chat' },
-    { id: 'advice', emoji: '🧠', label: 'Need advice' },
-    { id: 'chill', emoji: '😌', label: 'Just chilling' }
+    { id: 'vent', emoji: '🌑', label: 'Release thoughts' },
+    { id: 'casual', emoji: '✨', label: 'Light talk' },
+    { id: 'advice', emoji: '🕯️', label: 'Seeking light' },
+    { id: 'chill', emoji: '🌊', label: 'Drift away' }
   ];
 
   const handleStart = () => {
@@ -23,35 +25,56 @@ const Home = () => {
   };
 
   return (
-    <div className="h-full flex flex-col relative px-6 py-12">
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 max-w-7xl mx-auto w-full relative">
       {/* Header */}
-      <div className="flex justify-between items-center mb-12">
-        <div>
-          <h2 className="text-[#F8FAFC] font-bold">Hi, {profile?.username || 'Friend'}</h2>
-          <p className="text-xs text-[#64748B]">Let's find your circle</p>
+      <div className="w-full flex justify-between items-center mb-24 px-8 absolute top-8">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-black font-black text-xl shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+            IC
+          </div>
+          <div className="hidden md:block">
+            <h2 className="text-[#F8FAFC] font-black text-xl leading-tight">Welcome, {profile?.username || 'Guest'}</h2>
+            <p className="text-[10px] text-amber-500/60 font-black uppercase tracking-[0.3em]">YOUR SESSION IS READY</p>
+          </div>
         </div>
-        <button 
-          onClick={logout}
-          className="text-xs font-semibold text-[#94A3B8] hover:text-[#6366F1] transition-colors"
-        >
-          Logout
-        </button>
+        <div className="flex gap-4">
+          <button 
+            onClick={() => {
+              const email = user?.email || '';
+              const uid = user?.id;
+              if (uid) fetchProfile(uid);
+              alert("Identity and Room sync refreshed!");
+            }}
+            className="px-6 py-2.5 rounded-full text-[10px] font-black text-amber-500 hover:text-white border border-amber-500/20 hover:bg-amber-500 transition-all uppercase tracking-widest"
+          >
+            REPAIR IDENTITY
+          </button>
+          <button 
+            onClick={logout}
+            className="px-6 py-2.5 rounded-full text-[10px] font-black text-[#64748B] hover:text-white border border-white/5 hover:bg-white/5 transition-all uppercase tracking-widest"
+          >
+            LOGOUT
+          </button>
+        </div>
+
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col justify-center">
-        <motion.h1 
-          initial={{ opacity: 0, y: 10 }}
+      <div className="w-full max-w-5xl flex flex-col items-center text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-3xl font-extrabold mb-3 text-[#F8FAFC] leading-tight"
+          className="mb-20"
         >
-          What do you feel like right now?
-        </motion.h1>
-        <p className="text-[#94A3B8] text-sm mb-12 opacity-80">
-          Pick your vibe. We'll match you instantly.
-        </p>
+          <h1 className="text-5xl md:text-8xl font-black mb-6 text-[#F8FAFC] tracking-tighter leading-none">
+            What's on your <span className="text-gradient">mind</span> tonight?
+          </h1>
+          <p className="text-[#94A3B8] text-lg md:text-xl max-w-2xl mx-auto font-medium opacity-50">
+            Pick a mood and we'll connect you with a circle of companions who feel the same.
+          </p>
+        </motion.div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 w-full mb-20">
           {vibes.map((v) => (
             <VibeCard
               key={v.id}
@@ -62,21 +85,42 @@ const Home = () => {
             />
           ))}
         </div>
-      </div>
 
-      {/* Footer Action */}
-      <div className="mt-auto space-y-4 pt-8">
-        <button
-          onClick={handleStart}
-          disabled={!selectedVibe}
-          className="w-full h-14 rounded-2xl bg-[#6366F1] text-white font-bold text-lg disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#5558E3] transition-all shadow-lg shadow-[#6366F1]/20"
-        >
-          Find my circle
-        </button>
-        <div className="flex items-center justify-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
-          <p className="text-xs text-[#64748B] font-medium">128 people online now</p>
+        <div className="w-full max-w-lg flex flex-col items-center gap-6">
+          <button
+            onClick={handleStart}
+            disabled={!selectedVibe}
+            className="h-20 w-full rounded-full bg-white text-black font-black text-2xl disabled:opacity-5 disabled:cursor-not-allowed hover:scale-105 transition-all shadow-[0_0_50px_rgba(255,255,255,0.1)]"
+          >
+            ENTER THE CIRCLE
+          </button>
+
+          <button
+            onClick={() => navigate('/companion')}
+            className="h-14 w-full rounded-full border border-white/10 text-white font-black text-lg hover:bg-white/5 transition-all flex items-center justify-center gap-3 group"
+          >
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-presence" />
+            CHAT WITH COMPANION
+          </button>
+
+          
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center gap-3 glass px-6 py-2.5 rounded-full border border-white/5">
+              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shadow-[0_0_10px_#f59e0b]" />
+              <p className="text-[10px] text-[#64748B] font-black uppercase tracking-[0.4em]">
+                128 COMPANIONS ONLINE
+              </p>
+            </div>
+            
+            {/* Debug Monitor */}
+            {debugMsg && (
+              <div className="mt-4 px-6 py-2 bg-red-500/10 border border-red-500/20 rounded-xl">
+                <p className="text-[8px] font-mono text-red-400 uppercase tracking-widest">{debugMsg}</p>
+              </div>
+            )}
+          </div>
         </div>
+
       </div>
     </div>
   );
