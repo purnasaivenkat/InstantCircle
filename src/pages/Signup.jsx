@@ -18,7 +18,7 @@ const Signup = () => {
     setError('');
     try {
       await signup(email, password, username);
-      navigate('/verify');
+      navigate('/verify', { state: { email } });
     } catch (err) {
       setError(err.message || 'Error creating account');
     } finally {
